@@ -15,9 +15,13 @@ def generate_hashtags(tweet,number):
     llm = OpenAI(temperature=1)
     tool_names = ["serpapi"]
     tools = load_tools(tool_names)
-    davinci = OpenAI(model_name='text-davinci-003')
-    agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True)
-    
+    gpt = OpenAI(model_name='gpt-3.5-turbo')
+    agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True) #agent that will combine LLMs power with google search
+    #next we have the vanilla gpt model incase agent fails to provide a valid result
+    llm_chain = LLMChain(
+                                    prompt=prompt_template,
+                                    llm=gpt
+                                )
     template = """ Generate {number} unique creative hashtags that are relevant to the tweet provided below so that the tweet is trending. The user of the hashtags is a 
     non profit organization called Stop The Traffik (STT) who is helping end human trafficking across the globe and hence the hashtags generated needs to be inline with that of a professional media outlet. 
     If no relevant hashtags can be generated, answer with "No hashtags could be generated for this tweet. Apologies for the inconvenience".
@@ -34,20 +38,15 @@ def generate_hashtags(tweet,number):
                                         tweet=tweet,
                                         number = number
                                     ))
+    # If no hashtags were recommended by the agent, or if it maxed out of iterations to try, we will just used the power of davinci model alone to generate the hashtags
         if recommended_hashtags == "No hashtags could be generated for this tweet. Apologies for the inconvenience." or recommended_hashtags == "Agent stopped due to max iterations.":
-            llm_chain = LLMChain(
-                                    prompt=prompt_template,
-                                    llm=davinci
-                                )
             recommended_hashtags = llm_chain.run({'tweet':tweet,'number':number})
         else:
             pass
     except:
-        llm_chain = LLMChain(
-                                    prompt=prompt_template,
-                                    llm=davinci
-                                )
         recommended_hashtags = llm_chain.run({'tweet':tweet,'number':number})
+    if recommended_hashtags == "":
+           recommended_hashtags = "No hashtags could be generated for this tweet at this moment. Kindly try again later."
     return (recommended_hashtags)
 
 def main():
