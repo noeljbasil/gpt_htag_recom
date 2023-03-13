@@ -17,11 +17,7 @@ def generate_hashtags(tweet,number):
     tools = load_tools(tool_names)
     gpt = OpenAI(model_name='gpt-3.5-turbo')
     agent = initialize_agent(tools, llm, agent="zero-shot-react-description", verbose=True) #agent that will combine LLMs power with google search
-    #next we have the vanilla gpt model incase agent fails to provide a valid result
-    llm_chain = LLMChain(
-                                    prompt=prompt_template,
-                                    llm=gpt
-                                )
+    
     template = """ Generate {number} unique creative hashtags that are relevant to the tweet provided below so that the tweet is trending. The user of the hashtags is a 
     non profit organization called Stop The Traffik (STT) who is helping end human trafficking across the globe and hence the hashtags generated needs to be inline with that of a professional media outlet. 
     If no relevant hashtags can be generated, answer with "No hashtags could be generated for this tweet. Apologies for the inconvenience".
@@ -33,6 +29,12 @@ def generate_hashtags(tweet,number):
         template=template
     )
 
+    #next we define the vanilla gpt model which will be used incase agent fails to provide a valid result
+    llm_chain = LLMChain(
+                                    prompt=prompt_template,
+                                    llm=gpt
+                                )
+    
     try:
         recommended_hashtags = agent.run(prompt_template.format(
                                         tweet=tweet,
